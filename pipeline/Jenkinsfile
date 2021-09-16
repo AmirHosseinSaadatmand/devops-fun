@@ -1,0 +1,105 @@
+def PROJECT_NAME="monitoring-status-model"
+def BRANCH_NAME="uat"
+
+def PROJECT_JAVA_HOME="/opt/jdk/jdk1.8.0_271"
+def PROJECT_M2_HOME="/root/.m2"
+def PROJECT_MAVEN_HOME="/opt/maven"
+
+def ARTIFACT_TYPE="jar"
+
+def MAVEN_COMMAND_BUILD="mvn_-B_-DskipTests_clean_package_install"
+
+def ARTIFACT_NAME_SNAPSHOT="monitoring-status-model-1.0.1"
+def ARTIFACT_NAME="monitoring-status-model-1.0.1"
+
+def JENKINS_DIR="/var/lib/jenkins/workspace"
+
+
+
+pipeline {
+    agent any
+   
+    stages {
+        stage('Prepare Pipeline') {
+            steps {
+                sh " chmod +x $JENKINS_DIR/$JOB_NAME/prepare/prepare.sh"
+                sh "./jenkins/prepare/prepare.sh JENKINS_DIR=${JENKINS_DIR}"
+                
+            }
+        }
+
+        stage('Get project source code') {
+            steps {
+                sh "./jenkins/build/git.sh JENKINS_DIR=${JENKINS_DIR} PROJECT_NAME=${PROJECT_NAME} BRANCH_NAME=${BRANCH_NAME}"
+            }
+        }
+
+        stage('Run Unit tests') {
+
+            steps {
+                sh "./jenkins/test/python.sh"
+            }
+
+            post {
+                success {
+
+                    echo "****************************"
+                    echo "Archiving jar file .... "
+                    echo "****************************"
+                    echo ""
+
+                   archiveArtifacts artifacts: "jenkins/target/*.${ARTIFACT_TYPE}", fingerprint: true
+                }
+            }
+        }
+
+        // stage('Run unit tests on project (IGNORED BECAUSE OF SLOW AND FAILED TESTS)') {
+         stage('Run unit tests on project ') {
+            steps {
+                 sh  "./jenkins/test/mvn.sh test MAVEN_COMMAND_BUILD='${MAVEN_COMMAND_BUILD}' ARTIFACT_TYPE=${ARTIFACT_TYPE} PROJECT_JAVA_HOME=${PROJECT_JAVA_HOME} PROJECT_M2_HOME=${PROJECT_M2_HOME} PROJECT_MAVEN_HOME=${PROJECT_MAVEN_HOME} JENKINS_DIR=${JENKINS_DIR} PROJECT_NAME=${PROJECT_NAME} BRANCH_NAME=${BRANCH_NAME} ARTIFACT_NAME_SNAPSHOT=${ARTIFACT_NAME_SNAPSHOT} ARTIFACT_NAME=${ARTIFACT_NAME}"
+
+                echo "******************************************************"
+                echo "TODO: IGNORED BECAUSE OF TEST ERRORS  .... "
+                echo "******************************************************"
+                echo ""
+                    
+            }
+
+            post {
+                success {
+                    echo "****************************"
+                    echo "Archiving test result  .... "
+                    echo "****************************"
+                    echo ""
+
+
+                    echo "******************************************************"
+                    echo "TODO: IGNORED BECAUSE OF TEST ERRORS  .... "
+                    echo "******************************************************"
+                    echo ""
+                    // archiveArtifacts artifacts: 'jenkins/target/*.xml', fingerprint: true
+                }
+            }
+        }
+
+    }
+    post 
+    {
+        always 
+        {
+            println currentBuild.result
+
+            step([$class: 'Mailer',
+                notifyEveryUnstableBuild: true,
+                recipients: emailextrecipients(
+                    [[$class: 'CulpritsRecipientProvider'],
+                    [$class: 'RequesterRecipientProvider']]),
+                sendToIndividuals: true])
+            step([$class: 'Mailer',
+
+                notifyEveryUnstableBuild: true,
+                recipients: "devops@tosantechno.com",
+                sendToIndividuals: true])
+        }
+    }
+}

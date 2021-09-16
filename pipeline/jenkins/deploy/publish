@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# list of parameters
+# PROJECT_NAME BUILD_TAG REG_URL PRODUCT_PORT_NUMBER
+
+for ARGUMENT in "$@"
+do
+
+    KEY=$(echo $ARGUMENT | cut -f1 -d=)
+    VALUE=$(echo $ARGUMENT | cut -f2 -d=)
+
+    case "$KEY" in
+            PROJECT_NAME)        PROJECT_NAME=${VALUE} ;;
+            REG_URL)        REG_URL=${VALUE} ;;
+            PRODUCT_PORT_NUMBER)        PRODUCT_PORT_NUMBER=${VALUE} ;;
+            BUILD_TAG)        BUILD_TAG=${VALUE} ;;
+            *)
+    esac
+
+done
+
+
+#docker rm -f $(docker ps -aqf "name=$PROJECT_NAME")
+echo "docker run  -d -p $PRODUCT_PORT_NUMBER:$PRODUCT_PORT_NUMBER  --name $PROJECT_NAME $REG_URL/$PROJECT_NAME:$BUILD_TAG"
+docker run  -d -p $PRODUCT_PORT_NUMBER:$PRODUCT_PORT_NUMBER  --name $PROJECT_NAME $REG_URL/$PROJECT_NAME:$BUILD_TAG
